@@ -31,5 +31,5 @@ else
 fi
 
 echo "Starting redis sentinel process now."
-exec docker-entrypoint.sh redis-server /sentinel-conf-file/sentinel.conf  --sentinel
+redis-server /sentinel-conf-file/sentinel.conf  --sentinel
 
