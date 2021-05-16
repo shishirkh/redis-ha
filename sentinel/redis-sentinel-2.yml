@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-redis-sentinel-instance-2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 0.3Gi
+  hostPath:
+    path: /data/sentinel2
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-redis-sentinel-instance-2
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce 
+  volumeName: pv-redis-sentinel-instance-2
+  resources:
+    requests:
+      storage: 0.3Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: deployment-redis-sentinel-instance-2
+  name: svc-redis-sentinel-instance-2
+spec:
+  ports:
+  - port: 26379
+    protocol: TCP
+    targetPort: 26379
+  selector:
+    app: deployment-redis-sentinel-instance-2
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deployment-redis-sentinel-instance-2
+  name: deployment-redis-sentinel-instance-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deployment-redis-sentinel-instance-2
+  template:
+    metadata:
+      labels:
+        app: deployment-redis-sentinel-instance-2
+        redis_sentinel: "yes"
+    spec:
+      containers:
+      - image: shishirkhandelwal/redis-sentinel:0.5
+        name: redis-sentinel
+        env:
+        - name: SENTINEL_QUORUM
+          value: "3"
+        - name: SENTINEL_DOWN_AFTER
+          value: "5000"
+        - name: SENTINEL_FAILOVER
+          value: "5000"
+        - name: REDIS_MASTER
+          value: "svc-redis-instance-1"
+        - name: BIND_ADDR
+          value: "0.0.0.0"
+        - name: SENTINEL_SVC_IP
+          value: "svc-redis-sentinel-instance-2"
+        - name: SENTINEL_SVC_PORT
+          value: "26379"
+        - name: SENTINEL_RESOLVE_HOSTNAMES
+          value: "yes"
+        - name: SENTINEL_ANNOUNCE_HOSTNAMES 
+          value: "yes"
+        - name: SENTINEL_CONFIG_FILE_DIR
+          value: "/sentinel-conf-file/" 
+        volumeMounts:
+        - name: "pvc-redis-instance"
+          mountPath: "/sentinel-conf-file/"
+      volumes:
+      - name: "pvc-redis-instance"
+        persistentVolumeClaim:
+          claimName: "pvc-redis-sentinel-instance-2"
+---

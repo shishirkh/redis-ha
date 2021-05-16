@@ -1,0 +1,70 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-redis-instance-2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  capacity:
+    storage: 0.3Gi
+  hostPath:
+    path: /data/redis-instance-2
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-redis-instance-2
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce 
+  volumeName: pv-redis-instance-2
+  resources:
+    requests:
+      storage: 0.3Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: deployment-redis-instance-2
+  name: svc-redis-instance-2
+spec:
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    app: deployment-redis-instance-2
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deployment-redis-instance-2
+  name: deployment-redis-instance-2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deployment-redis-instance-2
+  template:
+    metadata:
+      labels:
+        app: deployment-redis-instance-2
+    spec:
+      containers:
+      - image: redis
+        name: redis
+        command: ["redis-server"]
+        args: ["--replica-announce-ip","svc-redis-instance-2","--slaveof","svc-redis-instance-1","6379"]
+        volumeMounts:
+        - name: "pvc-redis-instance"
+          mountPath: "/data"
+      volumes:
+      - name: "pvc-redis-instance"
+        persistentVolumeClaim:
+          claimName: "pvc-redis-instance-2"
+---

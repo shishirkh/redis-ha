@@ -1,0 +1,60 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    redis_sentinel: "yes"
+  name: svc-redis-sentinel-instances
+spec:
+  ports:
+  - port: 26379
+    protocol: TCP
+    targetPort: 26379
+  selector:
+    redis_sentinel: "yes"
+  type: ClusterIP
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: deployment-redis-sentinel-proxy
+  name: deployment-redis-sentinel-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: deployment-redis-sentinel-proxy
+  template:
+    metadata:
+      labels:
+        app: deployment-redis-sentinel-proxy
+    spec:
+      containers:
+      - image: flaccid/redis-sentinel-proxy:latest
+        name: redis-sentinel-proxy
+        env:
+        - name: LISTEN_ADDRESS
+          value: "0.0.0.0:6379"
+        - name: SENTINEL_ADDRESS
+          value: "svc-redis-sentinel-instances:26379"
+        - name: REDIS_MASTER_NAME
+          value: "mymaster"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: deployment-redis-sentinel-proxy
+  name: svc-redis-sentinel-proxy
+spec:
+  ports:
+  - port: 6379
+    protocol: TCP
+    targetPort: 6379
+  selector:
+    app: deployment-redis-sentinel-proxy
+  type: ClusterIP
+---
+
