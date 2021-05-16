@@ -61,7 +61,7 @@ spec:
         name: redis-sentinel
         env:
         - name: SENTINEL_QUORUM
-          value: "3"
+          value: "2"
         - name: SENTINEL_DOWN_AFTER
           value: "5000"
         - name: SENTINEL_FAILOVER
